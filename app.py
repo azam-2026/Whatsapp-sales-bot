@@ -5,19 +5,29 @@ from groq import Groq
 
 app = Flask(__name__)
 
-# Render Environment Variables
 GREEN_API_ID_INSTANCE = os.environ.get("GREEN_API_ID_INSTANCE", "710722747289")
 GREEN_API_TOKEN_INSTANCE = os.environ.get("GREEN_API_TOKEN_INSTANCE", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
+# Kill Switch: Bot Active/Inactive control
+BOT_ACTIVE = os.environ.get("BOT_ACTIVE", "true").lower() == "true"
+
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+
+# Keywords jinse Bot activate hoga
+TRIGGER_KEYWORDS = ["demo", "property", "flat", "plot", "real estate", "2bhk", "3bhk", "buy", "rent", "#bot"]
 
 @app.route("/", methods=["GET"])
 def home():
-    return "WhatsApp Real Estate AI Bot is Live!"
+    status = "Active" if BOT_ACTIVE else "Suspended"
+    return f"WhatsApp AI Bot status: {status}"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    # Agar admin ne Bot OFF kar diya ho
+    if not BOT_ACTIVE:
+        return jsonify({"status": "bot_disabled"}), 200
+
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"status": "error", "message": "No payload"}), 400
@@ -35,7 +45,10 @@ def webhook():
         elif message_data.get("typeMessage") == "extendedTextMessage":
             text_message = message_data.get("extendedTextMessageData", {}).get("text", "")
 
-        if text_message and chat_id and client:
+        msg_lower = text_message.lower().strip()
+        is_triggered = any(keyword in msg_lower for keyword in TRIGGER_KEYWORDS)
+
+        if is_triggered and chat_id and client:
             try:
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
