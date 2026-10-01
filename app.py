@@ -5,7 +5,7 @@ from groq import Groq
 
 app = Flask(__name__)
 
-# Render Environment Variables se keys read karega
+# Render Environment Variables
 GREEN_API_ID_INSTANCE = os.environ.get("GREEN_API_ID_INSTANCE", "710722747289")
 GREEN_API_TOKEN_INSTANCE = os.environ.get("GREEN_API_TOKEN_INSTANCE", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
@@ -14,7 +14,7 @@ client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 @app.route("/", methods=["GET"])
 def home():
-    return "WhatsApp Sales Bot is Running!"
+    return "WhatsApp Real Estate AI Bot is Live!"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -24,13 +24,11 @@ def webhook():
 
     type_webhook = data.get("typeWebhook")
 
-    # Jab koi WhatsApp par message bhejta hai
     if type_webhook == "incomingMessageReceived":
         sender_data = data.get("senderData", {})
         chat_id = sender_data.get("chatId")
         message_data = data.get("messageData", {})
 
-        # Text Message extract kar rahe hain
         text_message = ""
         if message_data.get("typeMessage") == "textMessage":
             text_message = message_data.get("textMessageData", {}).get("textMessage", "")
@@ -39,13 +37,12 @@ def webhook():
 
         if text_message and chat_id and client:
             try:
-                # Groq AI se reply generate kar rahe hain
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
                         {
                             "role": "system",
-                            "content": "Aap ek helpful aur polite AI Sales Assistant ho. Customer ke sawalon ka chhota, clear aur friendly Hinglish me reply do."
+                            "content": "Aap ek professional Real Estate AI Sales Assistant ho. Customer se unka Budget, Preferred Location, 2BHK ya 3BHK requirement, aur Site Visit ka time puchho. Short, polite aur helpful Hinglish me reply do."
                         },
                         {
                             "role": "user",
@@ -56,9 +53,8 @@ def webhook():
                 ai_reply = response.choices[0].message.content
             except Exception as e:
                 print(f"Groq API Error: {e}")
-                ai_reply = "Aapka message mil gaya hai. Hum jald hi aap se sampark karenge!"
+                ai_reply = "Aapka message mil gaya hai! Humare Real Estate Agent jald hi aap se contact karenge."
 
-            # Green-API ke through WhatsApp reply send kar rahe hain
             send_url = f"https://api.green-api.com/waInstance{GREEN_API_ID_INSTANCE}/sendMessage/{GREEN_API_TOKEN_INSTANCE}"
             payload = {
                 "chatId": chat_id,
